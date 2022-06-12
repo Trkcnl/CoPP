@@ -1,6 +1,22 @@
 #include <fileread.h>
 
 
+void print_all(ijvm_state_t *current_state)
+{
+   printf("%x ", current_state->const_place);
+   printf("%x ", current_state->const_size);
+   for(int i = 0; i < current_state->const_size; i++)
+   {
+      printf("%x ", current_state->const_pool[i]);
+   }
+   printf("%x ", current_state->text_place);
+   printf("%x ", current_state->text_size);
+   for(int i = 0; i < current_state->text_size; i++)
+   {
+      printf("%x ", current_state->text_pool[i]);
+   }
+}
+
 void load_inst_list(ijvm_state_t *current_state)
 {
    
@@ -64,6 +80,18 @@ void copy_buffer_to_ijvm(ijvm_state_t *current_state, word_t *buffer)
    current_state->text_size = buffer[4];
 }
 
+void load_text_to_ijvm(ijvm_state_t *current_state, byte_t *buffer)
+{
+   current_state->text_pool = (byte_t*)malloc(sizeof(byte_t) * current_state->text_size + 1);
+   
+   for(int i = 0; i < current_state->text_size; i++)
+   {
+      current_state->text_pool[i] = buffer[i];
+   }
+
+   current_state->text_pool[current_state->text_size] = '\0';
+}
+
 bool is_inst(ijvm_state_t *current_state, byte_t byte_inst)
 {
    for(int i = 0; i < 24; i++)
@@ -89,25 +117,8 @@ void extract_instructions(ijvm_state_t *current_state, byte_t *buffer)
 
 void reset_ijvm(ijvm_state_t *current_state)
 {
+   free(current_state->ijvm_stack->stack_bottom);
+   free(current_state->ijvm_stack);
+   free(current_state->text_pool);
    free(current_state);
 }
-
-// void copy_const_pool_to_ijvm(ijvm_state_t *current_state, byte_t *buffer)
-// {
-//    current_state->const_pool = malloc()
-// }
-
-
-
-// int byter_arr_to_int(byte_t * arr, const int size_arr)
-// {
-//    int result = 0x0, j = 0x01;
-
-//    for(int i = size_arr - 1; i > -1; i--)
-//    {
-//       result += arr[i] * (0x1 * j);
-//       j *= 0x100;
-//    }
-
-//    return result;
-// }
