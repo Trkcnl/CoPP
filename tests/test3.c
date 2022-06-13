@@ -62,7 +62,8 @@ void test_ifeq1()
 
     // L2 iteration 2
     steps(6);
-    assert(tos() == 0x3);
+    word_t tryt = tos();
+    assert(tryt == 0x3);
     steps(3);
     assert(startpc == get_program_counter());
 

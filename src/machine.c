@@ -9,8 +9,7 @@ word_t *stack_array;
 
 int init_ijvm(char *binary_file)
 {
-  // Implement loading of binary here
-
+   // Implement loading of binary here
    //open file
    FILE *fp;
 
@@ -20,13 +19,11 @@ int init_ijvm(char *binary_file)
       return -1;
    }
 
-   
-
    // Create a buffer to read file
    word_t block_arr_f[6];
    block_arr_f[5] = '\0';
 
-   // Create ijvm instance
+   // Allocations
    if((ijvm_instance = (ijvm_state_t *) malloc(sizeof(ijvm_state_t))) == NULL)
    {  
       fprintf(stderr,"Malloc failed.");
@@ -45,6 +42,10 @@ int init_ijvm(char *binary_file)
    }
 
 
+   // Initialize output stream
+   set_output(stdout);
+   set_input(stdin);
+
    // Load all instructions to ijvm instance
    load_inst_list(ijvm_instance);
 
@@ -60,7 +61,6 @@ int init_ijvm(char *binary_file)
 
    // read text and text_size
    read_word(block_arr_f + 3, fp, 2);
-   
    swap_word_arr(block_arr_f + 3, 2);
 
 
@@ -79,10 +79,6 @@ int init_ijvm(char *binary_file)
    load_text_to_ijvm(ijvm_instance, text_f);
 
    // print_all(ijvm_instance);
-   
-   // int8_t res1 = (int8_t) text_f[1];
-   // word_t res = (word_t) res1;
-   // printf("%d-%d", res,res1);
 
    // Initiate pc as 0
    ijvm_instance->program_counter = 0;
@@ -120,7 +116,6 @@ bool step()
    switch (next_inst)
    {
    case 0x00:
-      printf("NOP");
       break;
    case 0x10: // BIPUSH
       bi_push(ijvm_instance);      
@@ -130,8 +125,16 @@ bool step()
       printf("LDC_W");
       break;
 
+   case 0x57: // IOR
+      pop(ijvm_instance);
+      break;
+
    case 0x59: // DUP
-      printf("DUP");
+      dup(ijvm_instance);
+      break;
+
+   case 0x5F: // IOR
+      swap(ijvm_instance);
       break;
 
    case 0x60: // IADD
@@ -145,21 +148,29 @@ bool step()
    case 0x7E: // IAND
       i_and(ijvm_instance);
       break;
+
+   case 0x99: // IFEQ
+      ifeq(ijvm_instance);
+      break;
+
+   case 0x9B: // IFLT
+      iflt(ijvm_instance);
+      break;
+
+   case 0x9F: // ICEMPQ
+      icempq(ijvm_instance);
+      break;
+   
+   case 0xA7: // GOTO
+      go_to(ijvm_instance);
+      break;
    
    case 0xB0: // IOR
       i_or(ijvm_instance);
       break;
-
-   case 0x5F: // IOR
-      swap(ijvm_instance);
-      break;
-
-   case 0x57: // IOR
-      pop(ijvm_instance);
-      break;
    
    case 0xFD:
-      printf("OUT");
+      fprintf(ijvm_instance->ijvm_output,"%x",pop(ijvm_instance));
       break;
    default:
       break;
@@ -170,12 +181,12 @@ bool step()
 
 void set_input(FILE *fp)
 {
-  // TODO: implement me
+   ijvm_instance->ijvm_input = fp;
 }
 
 void set_output(FILE *fp)
 {
-  // TODO: implement me
+   ijvm_instance->ijvm_output = fp;
 }
 
 word_t tos()

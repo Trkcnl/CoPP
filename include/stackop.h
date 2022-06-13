@@ -16,7 +16,17 @@ void i_or(ijvm_state_t *current_state);
 
 void swap(ijvm_state_t *current_state);
 
+void dup(ijvm_state_t *current_state);
+
 word_t pop(ijvm_state_t *current_state);
+
+void go_to(ijvm_state_t *current_state);
+
+void ifeq(ijvm_state_t *current_state);
+
+void iflt(ijvm_state_t *current_state);
+
+void icempq(ijvm_state_t *current_state);
 
 
 //word_t tos_t(ijvm_state_t *current_state);

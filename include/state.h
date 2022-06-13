@@ -25,6 +25,9 @@ typedef struct ijvm_state
 
    stack_ijvm_t *ijvm_stack;
 
+   FILE *ijvm_output;
+   FILE *ijvm_input;
+
    int program_counter;
 } ijvm_state_t;
 
