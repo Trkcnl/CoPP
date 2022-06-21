@@ -1,11 +1,12 @@
 #include <ijvm.h>
 #include <fileread.h>
 #include <stackop.h>
+#include <frame.h>
 
 
 ijvm_state_t * ijvm_instance;
-stack_ijvm_t * stack_instance;
-word_t *stack_array;
+
+
 
 int init_ijvm(char *binary_file)
 {
@@ -18,7 +19,6 @@ int init_ijvm(char *binary_file)
       fprintf(stderr, "File read Error!");
       return -1;
    }
-
    // Create a buffer to read file
    word_t block_arr_f[6];
    block_arr_f[5] = '\0';
@@ -29,13 +29,16 @@ int init_ijvm(char *binary_file)
       fprintf(stderr,"Malloc failed.");
       return -1;
    }
-
+   
+   stack_ijvm_t * stack_instance;
    if((stack_instance = (stack_ijvm_t*)malloc(sizeof(stack_ijvm_t))) == NULL)
    {
       fprintf(stderr,"Malloc failed");
       return -1;
    }
-   if((stack_array = (word_t*)malloc(sizeof(word_t) * 20)) == NULL)
+
+   word_t *stack_array;
+   if((stack_array = (word_t*)malloc(sizeof(word_t) * 256)) == NULL)
    {
       fprintf(stderr,"Malloc failed");
       return -1;
@@ -56,8 +59,9 @@ int init_ijvm(char *binary_file)
 
 
    // read const pool
-   byte_t const_poll[block_arr_f[2]];
-   read_byte(const_poll, fp, block_arr_f[2]);
+   word_t const_poll[block_arr_f[2] / 4];
+   read_word(const_poll, fp, block_arr_f[2] / 4);
+   swap_word_arr(const_poll, block_arr_f[2] / 4);
 
    // read text and text_size
    read_word(block_arr_f + 3, fp, 2);
@@ -77,6 +81,8 @@ int init_ijvm(char *binary_file)
 
    // load text pool to ijvm instance
    load_text_to_ijvm(ijvm_instance, text_f);
+   // load const pool to ijvm instance
+   load_const_to_ijvm(ijvm_instance, const_poll);
 
    // print_all(ijvm_instance);
 
@@ -87,6 +93,9 @@ int init_ijvm(char *binary_file)
    stack_instance->stack_pointer = stack_array;
    stack_instance->stack_bottom = stack_array;
    ijvm_instance->ijvm_stack = stack_instance;
+
+   ijvm_instance->current_frame = new_node();
+   ijvm_instance->frame_size = 1;
 
    fclose(fp);
 
@@ -117,60 +126,78 @@ bool step()
    {
    case 0x00:
       break;
-   case 0x10: // BIPUSH
+   case OP_BIPUSH: // BIPUSH
       bi_push(ijvm_instance);      
       break;
 
-   case 0x13: // LDC_W
-      printf("LDC_W");
+   case OP_ILOAD: // BIPUSH
+      iload(ijvm_instance);      
       break;
 
-   case 0x57: // IOR
+   case OP_LDC_W: // LDC_W
+      ldc_w(ijvm_instance);
+      break;
+
+   case OP_ISTORE: // ISTORE
+      istore(ijvm_instance);
+      break;
+
+   case OP_POP: // POP
       pop(ijvm_instance);
       break;
 
-   case 0x59: // DUP
+   case OP_DUP: // DUP
       dup(ijvm_instance);
       break;
 
-   case 0x5F: // IOR
+   case OP_SWAP: // SWAP
       swap(ijvm_instance);
       break;
 
-   case 0x60: // IADD
+   case OP_IADD: // IADD
       i_add(ijvm_instance);
       break;
 
-   case 0x64: // ISUB
+   case OP_ISUB: // ISUB
       i_sub(ijvm_instance);
       break;
 
-   case 0x7E: // IAND
+   case OP_IAND: // IAND
       i_and(ijvm_instance);
       break;
+   case OP_IINC: // IINC
+      iinc(ijvm_instance);
+      break;
 
-   case 0x99: // IFEQ
+   case OP_IFEQ: // IFEQ
       ifeq(ijvm_instance);
       break;
 
-   case 0x9B: // IFLT
+   case OP_IFLT: // IFLT
       iflt(ijvm_instance);
       break;
 
-   case 0x9F: // ICEMPQ
+   case OP_ICMPEQ: // ICEMPQ
       icempq(ijvm_instance);
       break;
    
-   case 0xA7: // GOTO
+   case OP_GOTO: // GOTO
       go_to(ijvm_instance);
       break;
    
-   case 0xB0: // IOR
+   case OP_IOR: // IOR
       i_or(ijvm_instance);
       break;
+   case OP_INVOKEVIRTUAL: // INVOKEVIRTUAL
+      invoke(ijvm_instance);
+      break;
    
-   case 0xFD:
-      fprintf(ijvm_instance->ijvm_output,"%x",pop(ijvm_instance));
+   case OP_OUT:
+      fprintf(ijvm_instance->ijvm_output,"%c",pop(ijvm_instance));
+      
+      break;
+   case OP_HALT: // HALT
+      return true;
       break;
    default:
       break;
@@ -191,12 +218,12 @@ void set_output(FILE *fp)
 
 word_t tos()
 {
-   return *(stack_instance->stack_pointer);
+   return *(ijvm_instance->ijvm_stack->stack_pointer);
 }
 
 int stack_size()
 {
-   return stack_instance->stack_size;
+   return ijvm_instance->ijvm_stack->stack_size;
 }
 
 byte_t *get_text()
@@ -216,5 +243,11 @@ int get_program_counter()
 
 word_t *get_stack()
 {
-   return stack_instance->stack_bottom;
+   return ijvm_instance->ijvm_stack->stack_bottom;
+}
+
+word_t get_local_variable(int i)
+{
+   
+   return *(ijvm_instance->current_frame->stack_begin->stack_bottom + i);
 }

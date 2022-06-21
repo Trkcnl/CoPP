@@ -1,6 +1,7 @@
 {
    "files.associations": {
       "ijvm.h": "c",
-      "state.h": "c"
+      "state.h": "c",
+      "stdlib.h": "c"
    }
 }

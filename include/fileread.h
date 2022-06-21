@@ -21,6 +21,8 @@ void copy_buffer_to_ijvm(ijvm_state_t *current_state, word_t *buffer);
 
 void load_text_to_ijvm(ijvm_state_t *current_state, byte_t *buffer);
 
+void load_const_to_ijvm(ijvm_state_t *current_state, word_t *buffer);
+
 void load_inst_list(ijvm_state_t *current_state);
 
 bool is_inst(ijvm_state_t *current_state, byte_t byte_inst);

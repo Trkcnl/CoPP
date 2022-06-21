@@ -3,14 +3,14 @@
 
 void print_all(ijvm_state_t *current_state)
 {
-   printf("%x ", current_state->const_place);
-   printf("%x ", current_state->const_size);
+   printf("Constant:%x ", current_state->const_place);
+   printf("%x- ", current_state->const_size);
    for(int i = 0; i < current_state->const_size; i++)
    {
       printf("%x ", current_state->const_pool[i]);
    }
-   printf("%x ", current_state->text_place);
-   printf("%x ", current_state->text_size);
+   printf("\nText%x ", current_state->text_place);
+   printf("%x- ", current_state->text_size);
    for(int i = 0; i < current_state->text_size; i++)
    {
       printf("%x ", current_state->text_pool[i]);
@@ -75,7 +75,7 @@ void read_byte(byte_t *buffer, FILE *fp, const int read_size)
 void copy_buffer_to_ijvm(ijvm_state_t *current_state, word_t *buffer)
 {
    current_state->const_place = buffer[1];
-   current_state->const_size = buffer[2];
+   current_state->const_size = buffer[2] / 4;
    current_state->text_place = buffer[3];
    current_state->text_size = buffer[4];
 }
@@ -90,6 +90,17 @@ void load_text_to_ijvm(ijvm_state_t *current_state, byte_t *buffer)
    }
 
    current_state->text_pool[current_state->text_size] = '\0';
+}
+
+void load_const_to_ijvm(ijvm_state_t *current_state, word_t *buffer)
+{
+   word_t *cont_arr = (word_t*)malloc((sizeof(word_t) * current_state->const_size ));
+   current_state->const_pool = cont_arr;
+   
+   for(int i = 0; i < current_state->const_size; i++)
+   {
+      current_state->const_pool[i] = buffer[i];
+   }
 }
 
 bool is_inst(ijvm_state_t *current_state, byte_t byte_inst)
@@ -115,10 +126,16 @@ void extract_instructions(ijvm_state_t *current_state, byte_t *buffer)
    }
 }
 
+
+
 void reset_ijvm(ijvm_state_t *current_state)
 {
+   free(current_state->current_frame->stack_begin->stack_bottom);
+   free(current_state->current_frame->stack_begin);
+   free(current_state->current_frame);
    free(current_state->ijvm_stack->stack_bottom);
    free(current_state->ijvm_stack);
    free(current_state->text_pool);
+   free(current_state->const_pool);
    free(current_state);
 }
